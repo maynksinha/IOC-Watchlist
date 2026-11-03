@@ -1,0 +1,10 @@
+# Secrets and environment variables
+.env
+.env.*
+!.env.example
+
+# IDEs / Code Editors
+.vscode/
+.idea/
+node_modules/
+dist/
