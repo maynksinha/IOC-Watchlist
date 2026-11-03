@@ -10,12 +10,16 @@ export default function useApiQuery(apiFn) {
     setError(null)
     try {
       const res = await apiFn(...args)
-      setData(res.data)
-      return res
+      // Full envelope: { success, message, error_code, data }
+      const envelope = res.data ?? {}
+      setData(envelope.data ?? null)
+      return envelope
     } catch (err) {
+      const body = err.response?.data ?? {}
       const errPayload = {
-        status: err.response?.status,
-        data:   err.response?.data ?? { detail: err.message },
+        status:     err.response?.status,
+        message:    body.message    ?? err.message,
+        error_code: body.error_code ?? 'UNKNOWN_ERROR',
       }
       setError(errPayload)
       throw errPayload

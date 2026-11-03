@@ -1,49 +1,35 @@
-from dataclasses import dataclass
+from sqlalchemy.ext.asyncio import AsyncConnection
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.utils.ioc_engine import normalize_and_detect, InvalidIOCError
 from app.repositories import IOCRepository, TagRepository
 from app.schemas import IOCCreate
-from app.models import IOC
-
-
-@dataclass
-class CreateResult:
-    ioc: IOC | None
-    canonical: str
-    duplicate: bool
+from app.exceptions import CustomAPIException
+from app.utils.ioc_engine import normalize_and_detect, InvalidIOCError
+from app.constants import ErrorCode
 
 
 class IOCService:
-    def __init__(self, db: AsyncSession) -> None:
-        self._ioc_repo = IOCRepository(db)
-        self._tag_repo = TagRepository(db)
+    def __init__(self, conn: AsyncConnection) -> None:
+        self._ioc = IOCRepository(conn)
+        self._tag = TagRepository(conn)
 
-    def normalize(self, raw: str) -> tuple[str, object]:
-        """Raises InvalidIOCError when the value cannot be classified."""
-        return normalize_and_detect(raw)
+    async def create(self, data: IOCCreate) -> dict:
+        try:
+            canonical, ioc_type = normalize_and_detect(data.value)
+        except InvalidIOCError as exc:
+            raise CustomAPIException(str(exc), ErrorCode.INVALID_IOC, status_code=400) from exc
 
-    async def create(self, data: IOCCreate) -> CreateResult:
-        canonical, ioc_type = normalize_and_detect(data.value)
+        existing = await self._ioc.get_by_canonical(canonical)
+        if existing:
+            raise CustomAPIException(
+                f"IOC already exists with id={existing['id']}",
+                ErrorCode.DUPLICATE_IOC,
+                status_code=409,
+            )
 
-        tags = []
-        for tag_name in data.tags:
-            if tag_name.strip():
-                tag = await self._tag_repo.get_or_create(tag_name)
-                tags.append(tag)
-
-        ioc = await self._ioc_repo.create(
-            ioc_type=ioc_type,
-            ioc_raw=data.value.strip(),
-            ioc_canonical=canonical,
-            note=data.note,
-            tags=tags,
-        )
-        return CreateResult(ioc=ioc, canonical=canonical, duplicate=(ioc is None))
-
-    async def get_by_canonical(self, canonical: str) -> IOC | None:
-        return await self._ioc_repo.get_by_canonical(canonical)
+        tag_ids = [await self._tag.get_or_create(name) for name in data.tags if name.strip()]
+        ioc_id = await self._ioc.insert(ioc_type.value, data.value.strip(), canonical, data.note)
+        await self._ioc.link_tags(ioc_id, tag_ids)
+        return await self._ioc.get_by_id(ioc_id)
 
     async def list(
         self,
@@ -51,12 +37,11 @@ class IOCService:
         tag: str | None = None,
         page: int = 1,
         size: int = 50,
-    ) -> tuple[int, list[IOC]]:
-        return await self._ioc_repo.list(ioc_type=ioc_type, tag=tag, page=page, size=size)
+    ) -> dict:
+        total, items = await self._ioc.list(ioc_type=ioc_type, tag=tag, page=page, size=size)
+        return {"total": total, "page": page, "size": size, "items": items}
 
-    async def delete(self, ioc_id: int) -> bool:
-        ioc = await self._ioc_repo.get_by_id(ioc_id)
-        if not ioc:
-            return False
-        await self._ioc_repo.delete(ioc)
-        return True
+    async def delete(self, ioc_id: int) -> None:
+        if not await self._ioc.get_by_id(ioc_id):
+            raise CustomAPIException(f"IOC {ioc_id} not found", ErrorCode.NOT_FOUND, status_code=404)
+        await self._ioc.delete(ioc_id)

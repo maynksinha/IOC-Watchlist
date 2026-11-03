@@ -1,15 +1,14 @@
-from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
-from .tag import TagSchema
+from app.constants import MAX_VALUE_LENGTH, MAX_NOTE_LENGTH, MAX_TAGS, MAX_TAG_LENGTH
 
 
 class IOCCreate(BaseModel):
-    value: str
-    note: Optional[str] = None
-    tags: list[str] = []
+    value: str = Field(..., min_length=1, max_length=MAX_VALUE_LENGTH)
+    note: Optional[str] = Field(default=None, max_length=MAX_NOTE_LENGTH)
+    tags: list[str] = Field(default_factory=list, max_length=MAX_TAGS)
 
     @field_validator("value")
     @classmethod
@@ -18,21 +17,15 @@ class IOCCreate(BaseModel):
             raise ValueError("value must not be empty")
         return v
 
-
-class IOCResponse(BaseModel):
-    id: int
-    ioc_type: str
-    ioc_raw: str
-    ioc_canonical: str
-    note: Optional[str]
-    tags: list[TagSchema]
-    created_at: datetime
-
-    model_config = {"from_attributes": True}
-
-
-class IOCListResponse(BaseModel):
-    total: int
-    page: int
-    size: int
-    items: list[IOCResponse]
+    @field_validator("tags")
+    @classmethod
+    def validate_tags(cls, v: list[str]) -> list[str]:
+        cleaned: list[str] = []
+        for tag in v:
+            tag = tag.strip()
+            if not tag:
+                continue
+            if len(tag) > MAX_TAG_LENGTH:
+                raise ValueError(f"each tag must be at most {MAX_TAG_LENGTH} characters")
+            cleaned.append(tag)
+        return cleaned

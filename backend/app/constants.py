@@ -10,12 +10,6 @@ class IOCType(str, Enum):
     URL = "url"
 
 
-class TableName(str, Enum):
-    IOC = "ioc"
-    TAG = "tag"
-    IOC_TAG = "ioc_tag"
-
-
 class APIPrefix(str, Enum):
     IOCS = "/api/v1/iocs"
     TAGS = "/api/v1/tags"
@@ -31,11 +25,10 @@ class ErrorCode(str, Enum):
     INVALID_IOC = "INVALID_IOC"
     DUPLICATE_IOC = "DUPLICATE_IOC"
     NOT_FOUND = "NOT_FOUND"
+    VALIDATION_ERROR = "VALIDATION_ERROR"
+    RATE_LIMITED = "RATE_LIMITED"
+    PAYLOAD_TOO_LARGE = "PAYLOAD_TOO_LARGE"
     INTERNAL_ERROR = "INTERNAL_ERROR"
-
-
-class DBDefault(str, Enum):
-    SQLITE_URL = "sqlite+aiosqlite:///./data/ioc_watchlist.db"
 
 
 class AppDefault(str, Enum):
@@ -58,3 +51,13 @@ class EnvFilePath(str, Enum):
 PAGINATION_DEFAULT_PAGE = 1
 PAGINATION_DEFAULT_SIZE = 50
 PAGINATION_MAX_SIZE = 200
+
+# Input validation caps — keep in sync with frontend/src/constants.js
+MAX_VALUE_LENGTH = 2048
+MAX_NOTE_LENGTH = 1000
+MAX_TAGS = 20
+MAX_TAG_LENGTH = 50
+MAX_BODY_BYTES = 64 * 1024  # reject request bodies larger than 64 KB
+
+# Rate limiting (per client IP) applied to write endpoints
+RATE_LIMIT_WRITE = "30/minute"

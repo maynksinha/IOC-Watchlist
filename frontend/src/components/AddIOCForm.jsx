@@ -4,19 +4,21 @@ import { createIOCAPI } from '../services/iocService'
 import { fetchIOCs } from '../store/iocSlice'
 import { fetchTags } from '../store/tagSlice'
 import useApiQuery from '../hooks/useApiQuery'
-import TagInput from './TagInput'
-import DuplicateAlert from './DuplicateAlert'
+import { useToast } from './ui/Toast'
+import TagSelect from './TagSelect'
 import { theme } from '../theme/theme'
+import { LIMITS } from '../constants'
 
 export default function AddIOCForm() {
   const dispatch = useDispatch()
+  const toast = useToast()
   const { typeFilter, tagFilter } = useSelector((s) => s.filter)
+  const existingTags = useSelector((s) => s.tags.items)
 
   const [value,     setValue]     = useState('')
   const [note,      setNote]      = useState('')
   const [tags,      setTags]      = useState([])
-  const [duplicate, setDuplicate] = useState(null)
-  const [formError, setFormError] = useState('')
+  const [fieldError, setFieldError] = useState('')
 
   const { isLoading, execute: submitCreate } = useApiQuery(createIOCAPI)
 
@@ -25,53 +27,69 @@ export default function AddIOCForm() {
     dispatch(fetchTags())
   }
 
+  const validate = () => {
+    const v = value.trim()
+    if (!v) return 'IOC value is required.'
+    if (v.length > LIMITS.MAX_VALUE_LENGTH) return `IOC value must be at most ${LIMITS.MAX_VALUE_LENGTH} characters.`
+    if (note.length > LIMITS.MAX_NOTE_LENGTH) return `Note must be at most ${LIMITS.MAX_NOTE_LENGTH} characters.`
+    return ''
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setFormError('')
-    setDuplicate(null)
-    if (!value.trim()) return
+    const err = validate()
+    if (err) { setFieldError(err); return }
+    setFieldError('')
 
     try {
-      await submitCreate({ value: value.trim(), note: note.trim() || undefined, tags })
+      const res = await submitCreate({
+        value: value.trim(),
+        note: note.trim() || undefined,
+        tags,
+      })
+      toast.success(res.message || 'IOC created')
       setValue('')
       setNote('')
       setTags([])
       refreshList()
     } catch (err) {
-      const { status, data } = err
-      if (status === 409 && data?.detail?.existing) {
-        setDuplicate(data.detail.existing)
-      } else if (status === 400) {
-        setFormError(data?.detail?.detail || 'Invalid IOC format')
-      } else {
-        setFormError('Unexpected error. Please try again.')
-      }
+      // err: { status, message, error_code }
+      toast.error(err.message || 'Failed to add IOC')
     }
   }
 
   return (
-    <div className={`${theme.card} mb-4`}>
+    <div className={theme.card}>
       <h2 className={theme.text.label}>Add IOC</h2>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-        <textarea
-          className={theme.input.textarea}
-          rows={2}
-          placeholder="Paste IOC value (URL, IP, domain, hash) — defanged OK"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          required
-        />
+        <div>
+          <textarea
+            className={`${theme.input.textarea} ${fieldError && !value.trim() ? theme.input.error : ''}`}
+            rows={2}
+            maxLength={LIMITS.MAX_VALUE_LENGTH}
+            placeholder="Paste IOC value (URL, IP, domain, hash) — defanged OK"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+          />
+          <div className="flex justify-end mt-1">
+            <span className={theme.text.muted + ' text-xs'}>{value.length}/{LIMITS.MAX_VALUE_LENGTH}</span>
+          </div>
+        </div>
+
         <input
           className={theme.input.base}
+          maxLength={LIMITS.MAX_NOTE_LENGTH}
           placeholder="Note (optional)"
           value={note}
           onChange={(e) => setNote(e.target.value)}
         />
-        <TagInput tags={tags} onChange={setTags} />
-        {formError && <p className={theme.alert.error}>{formError}</p>}
-        <DuplicateAlert existing={duplicate} onDismiss={() => setDuplicate(null)} />
+
+        <TagSelect tags={tags} onChange={setTags} options={existingTags} />
+
+        {fieldError && <p className={theme.alert.error}>{fieldError}</p>}
+
         <button type="submit" disabled={isLoading} className={`self-start ${theme.button.primary}`}>
-          {isLoading ? 'Adding...' : 'Add IOC'}
+          {isLoading ? 'Adding…' : 'Add IOC'}
         </button>
       </form>
     </div>
