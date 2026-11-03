@@ -23,7 +23,7 @@ Built with **FastAPI + SQLite** (backend) and **React 18 + Redux Toolkit** (fron
 
 | Layer | Technology |
 |---|---|
-| Backend | Python 3.12, FastAPI, SQLAlchemy 2 async, aiosqlite |
+| Backend | Python 3.12, FastAPI, async, aiosqlite |
 | Database | SQLite (WAL mode via aiosqlite) |
 | Frontend | React 18, Vite, Redux Toolkit, Tailwind CSS |
 
@@ -41,7 +41,6 @@ Built with **FastAPI + SQLite** (backend) and **React 18 + Redux Toolkit** (fron
 
 ```bash
 git clone <repo-url>
-cd ioc-watchlist
 ```
 
 ### 2 — Backend setup
@@ -71,7 +70,7 @@ The default `.env` is ready to go for local dev — no changes needed.
 
 ```bash
 # From backend/ directory, with .venv active
-uvicorn app.main:app --reload --port 8000
+uvicorn run:app --reload --port 8000
 ```
 
 The database file (`data/ioc_watchlist.db`) is created automatically on first start via the lifespan hook — **no migration step required** for local dev.
@@ -91,8 +90,6 @@ Visit **http://localhost:5173** — the Vite dev server proxies `/api/*` request
 
 
 ## API Reference
-
-Base URL: `http://localhost:8000/api/v1`
 
 | Method | Endpoint | Description |
 |---|---|---|

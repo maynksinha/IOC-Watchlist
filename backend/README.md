@@ -8,8 +8,7 @@ FastAPI backend to ingest, normalize, tag, and query Indicators of Compromise.
 
 ```
 backend/
-├── run.py                        # Entry point — uvicorn run:app --reload
-├── main.py                       # create_app(): middleware, exception handler, routes, logger
+├── run.py                        # Entry point — uvicorn run:app --reload - create_app(): function
 ├── requirements.txt
 ├── .env                          # Local config (gitignored)
 ├── .env.example                  # Template — copy to .env and fill in values
@@ -21,13 +20,10 @@ backend/
     │   ├── env_config.py         # Loads .env → exposes DATABASE_URL, HOST, PORT, IS_PROD, etc.
     │   └── database.py           # SQLAlchemy engine, Base, get_db
     │
-    ├── models/                   # ORM models (SQLAlchemy)
-    │   ├── ioc.py
-    │   └── tag.py
     │
     ├── schemas/                  # Pydantic I/O contracts
     │   ├── ioc.py
-    │   └── tag.py
+    │   └── response.py
     │
     ├── repositories/             # Raw DB queries — no business logic
     │   ├── ioc_repository.py
@@ -49,7 +45,9 @@ backend/
     └── utils/
         ├── logger.py             # Loguru logger — import everywhere: from app.utils.logger import logger
         └── ioc_engine/           # Pure IOC normalization logic (no DB)
-            └── engine.py         # defang · detect_type · canonicalize · normalize_and_detect
+            └── defang.py         # defang input
+            └── detectors.py      # detect_type
+            └── engine.py         # canonicalize · normalize_and_detect
 ```
 
 ---
