@@ -53,9 +53,12 @@ def detect_type(value: str) -> IOCType:
                 return IOCType.IPV4
 
     if re.match(r'^(https?|ftp)://', v, re.IGNORECASE):
-        parsed = urlparse(v)
-        if parsed.netloc:
-            return IOCType.URL
+        try:
+                parsed = urlparse(v)
+                if parsed.netloc:
+                        return IOCType.URL
+        except ValueError as exc:
+            raise InvalidIOCError(f"Malformed URL: {v!r}") from exc
 
     clean = v.rstrip('.')
     if _DOMAIN_RE.match(clean):
@@ -77,7 +80,10 @@ def canonicalize(defanged: str, ioc_type: IOCType) -> str:
         return v.rstrip('.').lower()
 
     if ioc_type == IOCType.URL:
-        parsed = urlparse(v)
+        try:
+             parsed = urlparse(v)
+        except ValueError as exc:
+            raise InvalidIOCError(f"Malformed URL during canonicalize: {v!r}") from exc
         scheme = parsed.scheme.lower()
         netloc = parsed.netloc.lower()
         path = parsed.path
