@@ -4,11 +4,14 @@ export function createApiThunk(typePrefix, apiFn) {
   return createAsyncThunk(typePrefix, async (arg, { rejectWithValue }) => {
     try {
       const res = await apiFn(arg)
-      return res.data
+      // API always returns { success, message, error_code, data }
+      return res.data.data
     } catch (err) {
+      const body = err.response?.data ?? {}
       return rejectWithValue({
-        status: err.response?.status,
-        data:   err.response?.data ?? { detail: err.message },
+        status:     err.response?.status,
+        message:    body.message  ?? err.message,
+        error_code: body.error_code ?? 'UNKNOWN_ERROR',
       })
     }
   })

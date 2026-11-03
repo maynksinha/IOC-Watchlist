@@ -9,15 +9,17 @@ export const deleteIOC = createAsyncThunk(
   'iocs/delete',
   async (id, { dispatch, getState, rejectWithValue }) => {
     try {
-      await deleteIOCAPI(id)
+      const res = await deleteIOCAPI(id)
       const { typeFilter, tagFilter } = getState().filter
       dispatch(fetchIOCs({ type: typeFilter || undefined, tag: tagFilter || undefined }))
       dispatch(fetchTags())
-      return id
+      return { id, message: res.data?.message ?? 'IOC deleted' }
     } catch (err) {
+      const body = err.response?.data ?? {}
       return rejectWithValue({
-        status: err.response?.status,
-        data:   err.response?.data ?? { detail: err.message },
+        status:     err.response?.status,
+        message:    body.message    ?? err.message,
+        error_code: body.error_code ?? 'UNKNOWN_ERROR',
       })
     }
   }
