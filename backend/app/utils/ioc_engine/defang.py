@@ -4,6 +4,7 @@ import re
 # obfuscated IOCs (e.g. "hxxps://evil[.]com" -> "https://evil.com").
 _PATTERNS: list[tuple[re.Pattern, str]] = [
     (re.compile(r"hxxps://", re.IGNORECASE), "https://"),
+    (re.compile(r"hxxp\[s\]://", re.IGNORECASE), "https://"),
     (re.compile(r"hxxp://", re.IGNORECASE), "http://"),
     (re.compile(r"http\[s\]://", re.IGNORECASE), "https://"),
     (re.compile(r"http\[:\]//", re.IGNORECASE), "http://"),
