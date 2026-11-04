@@ -107,14 +107,6 @@ def create_app() -> FastAPI:
 
     include_routes(app)
 
-    dist_dir = Path(__file__).parent.parent / "frontend" / "dist"
-    if dist_dir.exists():
-        app.mount("/assets", StaticFiles(directory=str(dist_dir / "assets")), name="assets")
-
-        @app.get("/{full_path:path}", include_in_schema=False)
-        async def spa_fallback(full_path: str):
-            return FileResponse(str(dist_dir / "index.html"))
-
     return app
 
 
