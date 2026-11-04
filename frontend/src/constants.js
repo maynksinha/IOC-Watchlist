@@ -1,4 +1,3 @@
-// Input caps — kept in sync with backend/app/constants.py
 export const LIMITS = {
   MAX_VALUE_LENGTH: 2048,
   MAX_NOTE_LENGTH: 1000,

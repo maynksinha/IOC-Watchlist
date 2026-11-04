@@ -45,19 +45,17 @@ class Env(str, Enum):
 
 class EnvFilePath(str, Enum):
     ENV = ".env"
-    DEFAULT = ".env.example"
+    DEFAULT = ".env.local"
 
 
 PAGINATION_DEFAULT_PAGE = 1
 PAGINATION_DEFAULT_SIZE = 50
 PAGINATION_MAX_SIZE = 200
 
-# Input validation caps — keep in sync with frontend/src/constants.js
 MAX_VALUE_LENGTH = 2048
 MAX_NOTE_LENGTH = 1000
 MAX_TAGS = 20
 MAX_TAG_LENGTH = 50
-MAX_BODY_BYTES = 64 * 1024  # reject request bodies larger than 64 KB
+MAX_BODY_BYTES = 64 * 1024 
 
-# Rate limiting (per client IP) applied to write endpoints
-RATE_LIMIT_WRITE = "30/minute"
+RATE_LIMIT_WRITE = "10/minute"
